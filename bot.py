@@ -765,6 +765,44 @@ async def vc(ctx):
     else:
         return await ctx.send("Apologies... voice channels can currently be opened for tournament channels and the games channel.")
 
+    
+class Confirm(discord.ui.View):
+    def __init__(self, ctx):
+        super().__init__()
+        self.value = None
+        self.author = ctx.message.author
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user == self.author:
+            return True
+        else:
+            await interaction.response.send_message('This confirmation dialog is not for you.', ephemeral=True)
+            return False
+
+    @discord.ui.button(label='Confirm', style=discord.ButtonStyle.green)
+    async def confirm(self, button: discord.ui.Button, interaction: discord.Interaction):
+        number = 0
+        if number + 1 >= 1:
+            button.style = discord.ButtonStyle.secondary
+            button.disabled = True
+            button.label = "Confirmed"
+        self.value = True
+        await interaction.response.edit_message(view=self)
+        self.stop()
+
+
+    @discord.ui.button(label='Cancel', style=discord.ButtonStyle.red)
+    async def cancel(self, button: discord.ui.Button, interaction: discord.Interaction):
+        number = 0
+        if number + 1 >= 1:
+            button.style = discord.ButtonStyle.secondary
+            button.disabled = True
+            button.label = "Canceled"
+        self.value = False
+        await interaction.response.edit_message(view=self)
+        self.stop()
+        
+        
 @bot.command()
 @commands.check(is_staff)
 async def getVariable(ctx, var):
@@ -1565,7 +1603,7 @@ async def school(ctx, title, state):
 async def censor(message):
     """Constructs Pi-Bot's censor."""
     channel = message.channel
-    ava = message.author.avatar_url
+    ava = message.author.avatar
     wh = await channel.create_webhook(name="Censor (Automated)")
     content = message.content
     for word in CENSORED_WORDS:
@@ -2086,8 +2124,21 @@ async def selfmute(ctx, *args):
     user = ctx.message.author
     if await is_staff(ctx):
         return await ctx.send("Staff members can't self mute.")
+    view = Confirm(ctx)
+    user = ctx.message.author
     time = " ".join(args)
-    await _mute(ctx, user, time, self=True)
+    await ctx.reply(f"Are you sure you want to selfmute for {time}", view=view)
+    await view.wait()
+    if view.value is False:
+        
+        await ctx.send('Selfmute Canceled')
+        
+        
+    if view.value is True:
+        
+        await _mute(ctx, user, time, self=True)
+    return view.value
+
 
 async def _mute(ctx, user:discord.Member, time: str, self: bool):
     """
