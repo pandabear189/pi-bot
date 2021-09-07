@@ -1158,7 +1158,20 @@ async def unlock(ctx):
     await ctx.channel.set_permissions(aRole, add_reactions=True, send_messages=True, read_messages=True)
     await ctx.channel.set_permissions(bRole, add_reactions=True, send_messages=True, read_messages=True)
     await ctx.send("Unlocked the channel to Member access. Please check if permissions need to be synced.")
-
+    
+    
+@bot.command()
+@commands.check(is_staff)
+async def sync(ctx, channel:discord.TextChannel=None):
+    """Syncs permissions to the category"""
+    if channel == None:
+        await ctx.message.channel.edit(sync_permissions=True)
+        await ctx.send(f'Permissions for {ctx.message.channel.mention} synced with {ctx.message.channel.category}')
+    else:
+        await channel.edit(sync_permissions=True)
+        await ctx.send(f'Permissions for {channel.mention} synced with {channel.category}')
+    
+    
 @bot.command()
 async def info(ctx):
     """Gets information about the Discord server."""
