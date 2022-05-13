@@ -1,23 +1,30 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Union
+
 import discord
 import src.discord.globals
+from discord.ext import commands
 from src.discord.globals import (
-    INVITATIONAL_INFO,
-    SERVER_ID,
-    CHANNEL_TOURNAMENTS,
-    CATEGORY_TOURNAMENTS,
     CATEGORY_ARCHIVE,
+    CATEGORY_TOURNAMENTS,
     CHANNEL_BOTSPAM,
+    CHANNEL_COMPETITIONS,
     CHANNEL_SUPPORT,
-    ROLE_GM,
+    CHANNEL_TOURNAMENTS,
     ROLE_AD,
     ROLE_AT,
-    CHANNEL_COMPETITIONS,
+    ROLE_GM,
+    SERVER_ID,
 )
-from src.mongo.mongo import get_invitationals, update_many
+
+if TYPE_CHECKING:
+    from bot import PiBot
+
+    from .reporter import Reporter
 
 
 class Tournament:
-
     official_name: str
     voters: list
 
@@ -44,7 +51,7 @@ class AllTournamentsView(discord.ui.View):
         super().__init__(timeout=None)
 
     @discord.ui.button(label="Toggle All Tournaments", style=discord.ButtonStyle.gray)
-    async def toggle(self, _: discord.ui.Button, interaction: discord.Interaction):
+    async def toggle(self, interaction: discord.Interaction, _: discord.ui.Button):
         # Get the relevant member asking to toggle all tournaments
         member = interaction.user
         guild = interaction.guild
@@ -69,7 +76,7 @@ class AllTournamentsView(discord.ui.View):
 
 
 class TournamentDropdown(discord.ui.Select):
-    def __init__(self, month_tournaments, bot, voting=False):
+    def __init__(self, month_tournaments, bot: PiBot, voting=False):
 
         final_options = []
         for tourney in month_tournaments:
@@ -140,7 +147,7 @@ class TournamentDropdown(discord.ui.Select):
             if len(need_to_update) > 0:
                 # Some docs need to be updated
                 docs_to_update = [t._properties for t in need_to_update]
-                await update_many(
+                await self.bot.mongo_database.update_many(
                     "data",
                     "invitationals",
                     docs_to_update,
@@ -166,14 +173,14 @@ class TournamentDropdownView(discord.ui.View):
         self.add_item(TournamentDropdown(month_tournaments, bot, voting=self.voting))
 
 
-async def update_tournament_list(bot, rename_dict: dict = {}) -> None:
+async def update_tournament_list(bot: PiBot, rename_dict: dict = {}) -> None:
     """
     Update the list of invitationals in #invitationals.
 
     :param rename_dict: A dictionary containing renames of channels and roles that need to be completed.
     """
     # Fetch invitationals
-    invitationals = await get_invitationals()
+    invitationals = await bot.mongo_database.get_invitationals()
     invitationals = [Tournament(t) for t in invitationals]
     invitationals.sort(key=lambda t: t.official_name)
 
@@ -212,7 +219,7 @@ async def update_tournament_list(bot, rename_dict: dict = {}) -> None:
     if "channels" in rename_dict:
         for item in rename_dict["channels"].items():
             channel = discord.utils.get(server.text_channels, name=item[0])
-            if channel != None:
+            if channel is not None:
                 # If old-named channel exists, then rename
                 await channel.edit(name=item[1])
 
@@ -220,7 +227,7 @@ async def update_tournament_list(bot, rename_dict: dict = {}) -> None:
     if "roles" in rename_dict:
         for item in rename_dict["roles"].items():
             role = discord.utils.get(server.roles, name=item[0])
-            if role != None:
+            if role is not None:
                 # If old-named role exists, then rename
                 await role.edit(name=item[1])
 
@@ -285,7 +292,9 @@ async def update_tournament_list(bot, rename_dict: dict = {}) -> None:
             if day_diff < -after_days:
                 # If past tournament date, now out of range - make warning report to archive
                 if channel_category.name != CATEGORY_ARCHIVE:
-                    reporter_cog = bot.get_cog("Reporter")
+                    reporter_cog: Union[commands.Cog, Reporter] = bot.get_cog(
+                        "Reporter"
+                    )
                     await reporter_cog.create_invitational_archive_report(
                         t, channel, role
                     )
@@ -327,7 +336,7 @@ async def update_tournament_list(bot, rename_dict: dict = {}) -> None:
                     all_tournaments_role, send_messages=True, read_messages=True
                 )
 
-        elif channel == None and t.status == "open":
+        elif channel is None and t.status == "open":
             # If tournament needs to be created
             new_role = await server.create_role(name=t.official_name)
             new_channel = await server.create_text_channel(

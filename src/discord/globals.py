@@ -1,8 +1,7 @@
-import os
-from dotenv import load_dotenv
 import datetime
+import os
 
-from src.mongo.mongo import update
+from dotenv import load_dotenv
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -130,7 +129,9 @@ SETTINGS = {
 }
 
 
-async def update_setting(values):
+async def update_setting(values, bot):
     for k, v in values.items():
         SETTINGS[k] = v
-        await update("data", "settings", SETTINGS["_id"], {"$set": values})
+        await bot.mongo_database.update(
+            "data", "settings", SETTINGS["_id"], {"$set": values}
+        )

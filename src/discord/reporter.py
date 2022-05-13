@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import datetime
 import json
-from typing import Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 import discord
 from discord.ext import commands
-
-from src.discord.globals import (CHANNEL_CLOSED_REPORTS, SERVER_ID)
+from src.discord.globals import CHANNEL_CLOSED_REPORTS, SERVER_ID
 from src.discord.tournaments import Tournament
 
 if TYPE_CHECKING:
@@ -21,7 +20,6 @@ Relevant views.
 class IgnoreButton(discord.ui.Button):
     """
     A button to mark the report as ignored.
-
     This causes the report message to be deleted, an informational message to be posted in closed-reports, and the report database to be updated
     """
 
@@ -92,7 +90,6 @@ class CompletedButton(discord.ui.Button):
 class ChangeInappropriateUsername(discord.ui.Button):
     """
     A button that changes the username of a user.
-
     This caues the report message to be deleted, an informational message to be posted in closed-reports, and the report database to be updated.
     """
 
@@ -303,14 +300,18 @@ class Reporter(commands.Cog):
 
     async def create_staff_message(self, embed: discord.Embed):
         guild: discord.Guild = self.bot.get_guild(SERVER_ID)
-        reports_channel: discord.TextChannel = discord.utils.get(guild.text_channels, name="reports")
+        reports_channel: discord.TextChannel = discord.utils.get(
+            guild.text_channels, name="reports"
+        )
         await reports_channel.send(embed=embed)
 
     async def create_inappropriate_username_report(
         self, member: Union[discord.Member, discord.User], offending_username: str
     ):
         guild: discord.Guild = self.bot.get_guild(SERVER_ID)
-        reports_channel: discord.TextChannel = discord.utils.get(guild.text_channels, name="reports")
+        reports_channel: discord.TextChannel = discord.utils.get(
+            guild.text_channels, name="reports"
+        )
 
         # Turn User into Member - if not possible, ignore the report, as no action needs to be taken
         member = guild.get_member(member.id)
@@ -322,7 +323,6 @@ class Reporter(commands.Cog):
             title="Inappropriate Username Detected",
             color=discord.Color.brand_red(),
             description=f"""{member.mention} was found to have the offending username: `{offending_username}`.
-
             You can take some action by using the buttons below.
             """,
         )
@@ -332,7 +332,9 @@ class Reporter(commands.Cog):
 
     async def create_cron_task_report(self, task: dict):
         guild: discord.Guild = self.bot.get_guild(SERVER_ID)
-        reports_channel: discord.TextChannel = discord.utils.get(guild.text_channels, name="reports")
+        reports_channel: discord.TextChannel = discord.utils.get(
+            guild.text_channels, name="reports"
+        )
 
         # Serialize values
         task["_id"] = str(task["_id"])  # ObjectID is not serializable by default
@@ -359,16 +361,16 @@ class Reporter(commands.Cog):
         self, user: discord.Member, invitational_name: str
     ):
         guild: discord.Guild = self.bot.get_guild(SERVER_ID)
-        reports_channel: discord.TextChannel = discord.utils.get(guild.text_channels, name="reports")
+        reports_channel: discord.TextChannel = discord.utils.get(
+            guild.text_channels, name="reports"
+        )
 
         # Assemble the embed
         embed = discord.Embed(
             title="New Invitational Channel Request",
             description=f"""
             {user.mention} has requested adding a new invitational channel for: `{invitational_name}`.
-
             If this report is unhelpful (the invitational already exists, the report is spam), then please ignore this report.
-
             To proceed with adding the invitational channel, please use the `/invyadd` command.
             """,
             color=discord.Color.yellow(),
@@ -384,13 +386,14 @@ class Reporter(commands.Cog):
         role: discord.Role,
     ):
         guild: discord.Guild = self.bot.get_guild(SERVER_ID)
-        reports_channel: discord.TextChannel = discord.utils.get(guild.text_channels, name="reports")
+        reports_channel: discord.TextChannel = discord.utils.get(
+            guild.text_channels, name="reports"
+        )
 
         embed = discord.Embed(
             title="Invitational Channel Suggested to be Archived",
             description=f"""
             The `{tournament_obj.official_name}` occurred on {discord.utils.format_dt(tournament_obj.tourney_date, 'D')}. Because it has been {tournament_obj.closed_days} days since that date, the tournament channel should potentially be archived.
-
             Archiving tournaments helps to prevent spam in tournament channels where competitors may be looking for updates. If tournamnet events are still occurring (such as waiting on results or event notifications), consider extending this warning.
             """,
             color=discord.Color.orange(),
@@ -405,7 +408,6 @@ class Reporter(commands.Cog):
     ) -> None:
         """
         Creates a notice (as a closed report) that a user was automatically unbanned through CRON.
-
         :param user: The user to make the auto notice about.
         :param is_present: Whether the user was present in the server when the unbanning occurred.
         """
@@ -436,7 +438,6 @@ class Reporter(commands.Cog):
     ) -> None:
         """
         Creates a notice (as a closed report) that a user was automatically unmuted through CRON.
-
         :param user: The user to make the auto notice about.
         :param is_present: Whether the user was present in the server when the unmuting occurred.
         """
